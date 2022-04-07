@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="common/include :: header('服务结算单')" />
+</head>
+<body class="gray-bg">
+	<div class="container-div">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="statement-form">
+					<div class="select-list">
+						<ul>
+							<li>
+								客户姓名：<input type="text" name="name"/>
+							</li>
+							<li>
+								联系电话：<input type="text" name="name"/>
+							</li>
+							<li>
+								车牌号码：<input type="text" name="name"/>
+							</li>
+							<!--<li>
+								是否套餐：
+								<select name="carPackage" th:with="type=${@dict.getType('si_car_package')}">
+									<option value="">所有</option>
+									<option th:each="dict : ${type}" th:text="${dict.label}" th:value="${dict.value}"></option>
+								</select>
+							</li>
+							<li>
+								服务分类：
+								<select name="serviceCatalog" th:with="type=${@dict.getType('si_service_catalog')}">
+									<option value="">所有</option>
+									<option th:each="dict : ${type}" th:text="${dict.label}" th:value="${dict.value}"></option>
+								</select>
+							</li>
+							<li>
+								审核状态：
+								<select name="auditStatus" th:with="type=${@dict.getType('si_audit_status')}">
+									<option value="">所有</option>
+									<option th:each="dict : ${type}" th:text="${dict.label}" th:value="${dict.value}"></option>
+								</select>
+							</li>
+							<li>
+								上架状态：
+								<select name="saleStatus" th:with="type=${@dict.getType('si_sale_status')}">
+									<option value="">所有</option>
+									<option th:each="dict : ${type}" th:text="${dict.label}" th:value="${dict.value}"></option>
+								</select>
+							</li>-->
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+							    <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+			
+			<div class="btn-group-sm" id="toolbar" role="group">
+				<a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="business:statement:add">
+	                <i class="fa fa-plus"></i> 新增
+	            </a>
+	        </div>
+	        
+	        <div class="col-sm-12 select-table table-striped">
+			    <table id="bootstrap-table"></table>
+			</div>
+		</div>
+	</div>
+	<th:block th:include="common/include :: footer" />
+	<script th:inline="javascript">
+		var editFlag = [[${@permission.hasPermi('business:statement:edit')}]];
+		var removeFlag = [[${@permission.hasPermi('business:statement:remove')}]];
+		var serviceCatalogData = [[${@dict.getType('cmi_service_type')}]];
+		var detailFlag = [[${@permission.hasPermi('business:statement:detail')}]];
+		var carPackageData = [[${@dict.getType('statement_status')}]];
+		var prefix = ctx + "/business/statement";
+		$(function() {
+		    var options = {
+		        url: prefix + "/query",
+		        createUrl: prefix + "/addPage",
+		        updateUrl: prefix + "/editPage?id={id}",
+		        removeUrl: prefix + "/remove",
+		        exportUrl: prefix + "/export",
+				uniqueId:"id",
+		        modalName: "服务项",
+		        columns: [{
+		            checkbox: true
+		        },
+		        {
+		            field: 'id',
+		            title: '结算单id',
+					visible: false
+		        },
+
+		        {
+		            field: 'customerName',
+		            title: '客户姓名',
+		            sortable: true
+		        },
+				{
+					field: 'customerPhone',
+					title: '客户联系方式',
+					visible: true
+				},
+		        {
+		            field: 'actualArrivalTime',
+		            title: '到店时间',
+		            sortable: true
+		        },
+				{
+					field: 'licensePlate',
+					title: '车牌号码',
+					sortable: true
+				},
+				{
+					field: 'carSeries',
+					title: '汽车类型',
+					sortable: true
+				},
+
+				{
+					field: 'serviceType',
+					title: '服务类型',
+					formatter: function(value, row, index) {
+						console.log(value, serviceCatalogData);
+						return $.table.selectDictLabel(serviceCatalogData, value);
+					}
+				},
+				{
+					field: 'appointmentId',
+					title: '预约用户',
+					formatter: function(value, row, index) {
+						return value==null ?"否":"是";
+					}
+				},
+				{
+					field: 'status',
+					title: '结算状态',
+					formatter: function(value, row, index) {
+						console.log(value, carPackageData);
+						return $.table.selectDictLabel(carPackageData, value);
+					}
+				},
+		        {
+		            title: '操作',
+		            align: 'center',
+		            formatter: function(value, row, index) {
+		                var actions = [];
+		                var auditDs = '';
+		                var saleDs = '';
+						if (row.status == 1) {
+							auditDs='disabled'
+						}
+		                actions.push('<a class="btn '+saleDs+' btn-success btn-xs '+auditDs+' ' + editFlag + '" href="javascript:void(0)" ' +
+								'onclick="$.operate.edit(\'' + row.id + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+						actions.push('<a class="btn btn-info btn-xs'+detailFlag +'"' +
+							'href="javascript:void(0)" onclick="detail(\'' + row.id + '\')"><i class="fa fa-check"></i>明细</a>');
+						actions.push('<a class="btn btn-danger btn-xs '+auditDs+' ' + removeFlag + '"  href="javascript:void(0)" onclick="deleteFun(\'' + row.id + '\')"><i class="fa fa-remove"></i>删除</a>');
+						/*actions.push('<a class="btn '+saleDs+' btn-danger btn-xs" href="javascript:void(0)"' +
+								' onclick="$.operate.remove(\'' + row.id + '\')"><i class="fa fa-remove"></i>删除</a>');*/
+		                return actions.join('');
+		            }
+		        }]
+		    };
+		    $.table.init(options);
+		});
+		function detail(id) {
+			var url = ctx + '/business/statementItem/itemDetail?statementId='+ id;
+			$.modal.openTab("结算单明细", url);
+		}
+		function deleteFun(id){
+			$.modal.confirm("确认此条消费单吗?此操作不可逆", function() {
+				$.operate.post(ctx + "/business/statement/remove?id="+id,function(result){
+					$.operate.ajaxSuccess(result);
+				});
+			});
+		}
+	</script>
+</body>
+</html>
